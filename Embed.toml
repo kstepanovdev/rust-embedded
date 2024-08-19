@@ -2,10 +2,10 @@
 chip = "STM32F407VGTx"
 
 [default.rtt]
-enabled = false
-
-[default.gdb]
 enabled = true
 
-[default.reset]
-halt_afterwards = false
+# [default.gdb]
+# enabled = true
+
+# [default.reset]
+# halt_afterwards = false
