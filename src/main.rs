@@ -5,23 +5,21 @@
 use core::fmt::Write;
 
 use cortex_m_rt::entry;
-use embedded_hal::delay::DelayNs;
+use heapless::Vec;
 use microbit::{
     board::Board,
     hal::{
         uarte::{Baudrate, Parity},
-        Timer, Uarte,
+        Uarte,
     },
 };
 use panic_halt as _;
-use rtt_target::{rprintln, rtt_init_print};
+use rtt_target::rtt_init_print;
 
 #[entry]
 fn main() -> ! {
     rtt_init_print!();
     let board = Board::take().unwrap();
-
-    // let mut timer = Timer::new(board.TIMER0);
 
     let mut serial = Uarte::new(
         board.UARTE0,
@@ -29,14 +27,25 @@ fn main() -> ! {
         Parity::EXCLUDED,
         Baudrate::BAUD115200,
     );
-    // let mut tx_buf = [0; 1];
+    let mut message_buf: Vec<char, 8> = Vec::new();
     let mut rx_buf = [0; 1];
 
     loop {
-        // write!(serial, "The quick brown fox jumps over the lazy dog.\r\n").unwrap();
-        // timer.delay_ms(1000u32);
-
         serial.read(&mut rx_buf).unwrap();
-        rprintln!("{:?}", rx_buf[0] as char);
+
+        if rx_buf[0] as char == '\r' {
+            for c in message_buf.iter().chain(&['\n', '\r']) {
+                serial.write_char(*c).unwrap();
+            }
+            message_buf.clear();
+        } else {
+            if message_buf.len() == 8 {
+                serial
+                    .write_str("MAX BUF LEN REACHED, PRESS ENTER \r\n")
+                    .unwrap();
+            } else {
+                message_buf.push(rx_buf[0] as char).unwrap();
+            }
+        }
     }
 }

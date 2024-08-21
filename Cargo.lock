@@ -312,6 +312,7 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "embedded-hal 1.0.0",
+ "heapless",
  "microbit-v2",
  "nb 1.1.0",
  "panic-halt",
