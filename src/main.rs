@@ -2,53 +2,41 @@
 #![no_main]
 #![no_std]
 
-use cortex_m_rt::entry;
-use microbit::{board::Board, display::blocking::Display, hal::Timer};
-use panic_halt as _;
+use core::fmt::Write;
 
-const PIXELS: [(u8, u8); 16] = [
-    (0, 0),
-    (0, 1),
-    (0, 2),
-    (0, 3),
-    (0, 4),
-    (1, 4),
-    (2, 4),
-    (3, 4),
-    (4, 4),
-    (4, 3),
-    (4, 2),
-    (4, 1),
-    (4, 0),
-    (3, 0),
-    (2, 0),
-    (1, 0),
-];
+use cortex_m_rt::entry;
+use embedded_hal::delay::DelayNs;
+use microbit::{
+    board::Board,
+    hal::{
+        uarte::{Baudrate, Parity},
+        Timer, Uarte,
+    },
+};
+use panic_halt as _;
+use rtt_target::{rprintln, rtt_init_print};
 
 #[entry]
 fn main() -> ! {
+    rtt_init_print!();
     let board = Board::take().unwrap();
 
-    let mut timer = Timer::new(board.TIMER0);
-    let mut display = Display::new(board.display_pins);
+    // let mut timer = Timer::new(board.TIMER0);
 
-    let mut grid = [
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-    ];
+    let mut serial = Uarte::new(
+        board.UARTE0,
+        board.uart.into(),
+        Parity::EXCLUDED,
+        Baudrate::BAUD115200,
+    );
+    // let mut tx_buf = [0; 1];
+    let mut rx_buf = [0; 1];
 
     loop {
-        for (x, y) in PIXELS.iter() {
-            toggle(&mut grid[*y as usize][*x as usize]);
-            display.show(&mut timer, grid, 200);
-            toggle(&mut grid[*y as usize][*x as usize]);
-        }
-    }
-}
+        // write!(serial, "The quick brown fox jumps over the lazy dog.\r\n").unwrap();
+        // timer.delay_ms(1000u32);
 
-fn toggle(led: &mut u8) {
-    *led = if *led == 0 { 1 } else { 0 };
+        serial.read(&mut rx_buf).unwrap();
+        rprintln!("{:?}", rx_buf[0] as char);
+    }
 }
