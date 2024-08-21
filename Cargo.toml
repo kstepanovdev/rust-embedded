@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+microbit-v2 = "0.15.0"
 cortex-m-rt = "0.7"
 panic-halt = "0.2"
 rtt-target = "0.5"
-stm32f4xx-hal = { version = "0.21", features = ["stm32f407"] }
+embedded-hal = "1"

@@ -1,5 +1,5 @@
 [default.general]
-chip = "STM32F407VGTx"
+chip = "nrf52833_xxAA"
 
 # [default.rtt]
 # enabled = true
