@@ -16,16 +16,16 @@ const CALIBRATION_INCREMENT: i32 = 200;
 
 #[derive(Debug)]
 pub struct Calibration {
-    center: Measurement,
-    scale: Measurement,
-    radius: u32,
+    pub center: Measurement,
+    pub scale: Measurement,
+    pub radius: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Measurement {
-    x: i32,
-    y: i32,
-    z: i32,
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
 }
 
 impl Default for Calibration {
@@ -77,8 +77,7 @@ where
 
     while samples < PERIMETER_POINTS {
         while !sensor.accel_status().unwrap().xyz_new_data() {}
-
-        let (x, y, _) = sensor.acceleration().unwrap().xyz_mg();
+        let (x, y, z) = sensor.acceleration().unwrap().xyz_mg();
 
         if x < -PIXEL2_THRESHOLD {
             cursor.1 = 0;
@@ -110,12 +109,13 @@ where
         if leds[cursor.0][cursor.1] != 1 {
             leds[cursor.0][cursor.1] = 1;
             while !sensor.mag_status().unwrap().xyz_new_data() {}
-            let mag_data = sensor.acceleration().unwrap().xyz_mg();
+            let (x_nt, y_nt, z_nt) = sensor.magnetic_field().unwrap().xyz_nt();
             let measurement = Measurement {
-                x: mag_data.0,
-                y: mag_data.1,
-                z: mag_data.2,
+                x: x_nt,
+                y: y_nt,
+                z: z_nt,
             };
+
             let mag_data = measurement_to_enu(measurement);
             data[samples] = mag_data;
             samples += 1;
