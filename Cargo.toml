@@ -8,5 +8,7 @@ cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 microbit-v2 = "0.15"
 cortex-m-rt = "0.7"
 panic-halt = "0.2"
+embedded-hal = "*"
 rtt-target = "0.5"
 lsm303agr = "1"
+libm = "0.2.8"

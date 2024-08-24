@@ -2,35 +2,36 @@
 #![no_main]
 #![no_std]
 
-use core::fmt::Write;
-use cortex_m::asm::nop;
+mod calibration;
+
+use calibration::calc_calibration;
 use cortex_m_rt::entry;
 use lsm303agr::{AccelMode, AccelOutputDataRate, Lsm303agr, MagMode, MagOutputDataRate};
 use microbit::{
     board::Board,
-    hal::{
-        uarte::{Baudrate, Parity},
-        Delay, Timer, Twim, Uarte,
-    },
+    display::blocking::Display,
+    hal::{Delay, Timer, Twim},
     pac::twim0::frequency::FREQUENCY_A,
 };
 use panic_halt as _;
-use rtt_target::rtt_init_print;
+use rtt_target::{rprintln, rtt_init_print};
 
 #[entry]
 fn main() -> ! {
     rtt_init_print!();
     let board = Board::take().unwrap();
-    let mut app_mode = AppMode::default();
-
+    let mut display = Display::new(board.display_pins);
     let mut timer = Timer::new(board.TIMER0);
-    let mut uart = Uarte::new(
-        board.UARTE0,
-        board.uart.into(),
-        Parity::EXCLUDED,
-        Baudrate::BAUD115200,
-    );
-    let mut rx_buf = [0; 1];
+
+    // let mut grid = [
+    //     [0, 0, 1, 0, 0],
+    //     [0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0],
+    // ];
+
+    // display.show(&mut timer, grid, 200);
 
     let i2c = Twim::new(board.TWIM0, board.i2c_internal.into(), FREQUENCY_A::K100);
     let mut sensor = Lsm303agr::new_with_i2c(i2c)
@@ -39,81 +40,27 @@ fn main() -> ! {
         .unwrap();
     sensor.init().unwrap();
     let mut delay = Delay::new(board.SYST);
+    sensor
+        .set_mag_mode_and_odr(&mut delay, MagMode::HighResolution, MagOutputDataRate::Hz50)
+        .unwrap();
+    sensor
+        .set_accel_mode_and_odr(&mut delay, AccelMode::Normal, AccelOutputDataRate::Hz50)
+        .unwrap();
+    rprintln!("PEPEGA");
+    // let calibration = calc_calibration(&mut sensor, &mut display, &mut timer);
+    // rprintln!("Calibration: {:?}", calibration);
+    // rprintln!("Calibration done, entering busy loop");
 
     loop {
-        if uart.read_timeout(&mut rx_buf, &mut timer, 40_000).is_ok() {
-            let c = rx_buf[0] as char;
-
-            match c {
-                'a' => {
-                    sensor
-                        .set_accel_mode_and_odr(
-                            &mut delay,
-                            AccelMode::Normal,
-                            AccelOutputDataRate::Hz50,
-                        )
-                        .unwrap();
-                    app_mode = AppMode::Accelerometer;
-                    write!(uart, "Accelerometer mode set\r\n").unwrap();
-                }
-                'm' => {
-                    sensor
-                        .set_mag_mode_and_odr(
-                            &mut delay,
-                            MagMode::HighResolution,
-                            MagOutputDataRate::Hz50,
-                        )
-                        .unwrap();
-
-                    app_mode = AppMode::Magnetometer;
-                    write!(uart, "Magnetometer mode set\r\n").unwrap();
-                }
-                'n' => {
-                    sensor
-                        .set_accel_mode_and_odr(
-                            &mut delay,
-                            AccelMode::PowerDown,
-                            AccelOutputDataRate::Hz50,
-                        )
-                        .unwrap();
-                    sensor
-                        .set_mag_mode_and_odr(
-                            &mut delay,
-                            MagMode::LowPower,
-                            MagOutputDataRate::Hz10,
-                        )
-                        .unwrap();
-                    app_mode = AppMode::None;
-                    write!(uart, "None mode set\r\n").unwrap();
-                }
-                _ => {}
-            }
+        if sensor.mag_status().unwrap().xyz_new_data() {
+            let mag_field = sensor.magnetic_field().unwrap();
+            rprintln!(
+                "x: {}, y: {}, z: {}\n",
+                mag_field.x_raw(),
+                mag_field.y_raw(),
+                mag_field.z_raw()
+            );
         }
-
-        match app_mode {
-            AppMode::Accelerometer => {
-                while sensor.accel_status().unwrap().xyz_new_data() {
-                    let acceleration = sensor.acceleration().unwrap();
-
-                    write!(uart, "Acceleration: {:?}\r\n", acceleration).unwrap();
-                }
-            }
-            AppMode::Magnetometer => {
-                while sensor.mag_status().unwrap().xyz_new_data() {
-                    let mag_field = sensor.magnetic_field().unwrap();
-
-                    write!(uart, "Magnetometer: {:?}\r\n", mag_field).unwrap();
-                }
-            }
-            AppMode::None => nop(),
-        }
+        timer.delay(200);
     }
-}
-
-#[derive(Default)]
-pub enum AppMode {
-    Accelerometer,
-    Magnetometer,
-    #[default]
-    None,
 }
