@@ -46,7 +46,7 @@ fn main() -> ! {
     sensor
         .set_accel_mode_and_odr(&mut delay, AccelMode::Normal, AccelOutputDataRate::Hz50)
         .unwrap();
-    rprintln!("PEPEGA");
+
     // let calibration = calc_calibration(&mut sensor, &mut display, &mut timer);
     // rprintln!("Calibration: {:?}", calibration);
     // rprintln!("Calibration done, entering busy loop");
