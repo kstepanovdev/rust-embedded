@@ -5,10 +5,11 @@ edition = "2021"
 
 [dependencies]
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
-microbit-v2 = "0.15.0"
+microbit-v2 = "0.15"
 cortex-m-rt = "0.7"
 panic-halt = "0.2"
 rtt-target = "0.5"
 embedded-hal = "1"
-nb = "1.1.0"
-heapless = "0.8.0"
+nb = "1"
+heapless = "0.8"
+lsm303agr = "1"
